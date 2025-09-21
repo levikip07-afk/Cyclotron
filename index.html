@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interactive Quiz Website</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #121212;
+      color: #fff;
+    }
+
+    header {
+      background-color: #1e90ff;
+      padding: 20px;
+      text-align: center;
+    }
+
+    main {
+      padding: 30px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    section {
+      margin-bottom: 60px;
+    }
+
+    /* Color Box */
+    #colorBox {
+      width: 150px;
+      height: 150px;
+      background: #1e90ff;
+      margin: auto;
+      border-radius: 8px;
+    }
+
+    button {
+      background-color: #00cc77;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #222;
+      margin: 8px;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #009944;
+      color: #fff;
+    }
+
+    /* Bounce animation */
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .bounce {
+      animation: bounce 0.5s ease;
+    }
+
+    /* Slide-in animation */
+    .hidden-section {
+      opacity: 0;
+      transform: translateY(50px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    .visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Progress Bar */
+    #progressBarWrapper {
+      width: 100%;
+      height: 10px;
+      background: #444;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    #progressBar {
+      width: 0%;
+      height: 100%;
+      background: #1e90ff;
+      transition: width 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Welcome to My Interactive Site</h1>
+    <p>Enjoy animations and a fun quiz!</p>
+  </header>
+
+  <main>
+    <!-- Color Box Section -->
+    <section class="hidden-section">
+      <h2>Animated Color Box</h2>
+      <div id="colorBox"></div>
+      <div style="text-align:center;">
+        <button onclick="startAnimation()">Start</button>
+        <button onclick="stopAnimation()">Stop</button>
+      </div>
+    </section>
+
+    <!-- Quiz Section -->
+    <section class="hidden-section" id="quizSection">
+      <h2>Quiz Time!</h2>
+
+      <!-- Progress Bar -->
+      <div id="progressBarWrapper">
+        <div id="progressBar"></div>
+      </div>
+
+      <div id="quizContainer">
+        <p id="quizQuestion">Loading question...</p>
+        <div id="quizChoices"></div>
+        <p id="quizFeedback" style="font-weight:bold;"></p>
+      </div>
+
+      <div id="quizResult" style="display:none; font-size:1.2em; margin-top:20px;">
+        <button onclick="restartQuiz()">Play Again 🔁</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Slide-in sections
+    const hiddenSections = document.querySelectorAll('.hidden-section');
+    const observer = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    hiddenSections.forEach(section => observer.observe(section));
+
+    // Color Box Animation
+    const colorBox = document.getElementById('colorBox');
+    let colorInterval = null;
+    let hue = 0;
+    function startAnimation() {
+      if (colorInterval) return;
+      colorInterval = setInterval(() => {
+        hue = (hue + 2) % 360;
+        colorBox.style.backgroundColor = `hsl(${hue}, 70%, 50%)`;
+      }, 50);
+    }
+    function stopAnimation() {
+      clearInterval(colorInterval);
+      colorInterval = null;
+    }
+
+    // Quiz Data
+    const allQuestions = [
+      {
+        question: "What is the capital of Japan?",
+        choices: {
+          a: "Beijing",
+          b: "Tokyo",
+          c: "Seoul",
+          d: "Bangkok"
+        },
+        answer: "b"
+      },
+      {
+        question: "What is 5 + 7?",
+        choices: {
+          a: "11",
+          b: "10",
+          c: "12",
+          d: "13"
+        },
+        answer: "c"
+      },
+      {
+        question: "Which gas do plants absorb?",
+        choices: {
+          a: "Oxygen",
+          b: "Hydrogen",
+          c: "Nitrogen",
+          d: "Carbon Dioxide"
+        },
+        answer: "d"
+      },
+      {
+        question: "What is the boiling point of water in Celsius?",
+        choices: {
+          a: "90",
+          b: "100",
+          c: "110",
+          d: "120"
+        },
+        answer: "b"
+      }
+    ];
+
+    // Shuffle utility
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    // Quiz Logic
+    let totalQuestions = 3;
+    let questions = shuffleArray(allQuestions).slice(0, totalQuestions);
+    let currentQuestion = 0;
+    let score = 0;
+
+    function showQuestion() {
+      const q = questions[currentQuestion];
+      document.getElementById('quizQuestion').textContent = q.question;
+
+      const choicesDiv = document.getElementById('quizChoices');
+      choicesDiv.innerHTML = '';
+
+      for (const key in q.choices) {
+        const btn = document.createElement('button');
+        btn.textContent = `${key.toUpperCase()}: ${q.choices[key]}`;
+        btn.onclick = () => submitAnswer(key);
+        btn.style.margin = '5px';
+        choicesDiv.appendChild(btn);
+      }
+
+      document.getElementById('quizFeedback').textContent = '';
+      updateProgress();
+    }
+
+    function submitAnswer(choice) {
+      const q = questions[currentQuestion];
+      const feedback = document.getElementById('quizFeedback');
+
+      feedback.classList.remove('bounce');
+      void feedback.offsetWidth;
+
+      if (choice === q.answer) {
+        feedback.textContent = "Correct! 🎉";
+        feedback.style.color = "#2ecc71";
+        score++;
+      } else {
+        feedback.textContent = `Wrong! Correct answer: ${q.answer.toUpperCase()}: ${q.choices[q.answer]}`;
+        feedback.style.color = "#e74c3c";
+      }
+
+      feedback.classList.add('bounce');
+
+      setTimeout(() => {
+        currentQuestion++;
+        if (currentQuestion < questions.length) {
+          showQuestion();
+        } else {
+          showFinalScore();
+        }
+      }, 1500);
+    }
+
+    function showFinalScore() {
+      document.getElementById('quizContainer').style.display = 'none';
+      const result = document.getElementById('quizResult');
+      result.style.display = 'block';
+      result.innerHTML = `
+        <strong>You scored ${score} out of ${questions.length}!</strong><br><br>
+        ${score === questions.length ? "Perfect score! 🌟" :
+          score >= 2 ? "Well done! 👍" :
+          "Keep practicing! 💪"
+        }
+        <br><br><button onclick="restartQuiz()">Play Again 🔁</button>
+      `;
+    }
+
+    function updateProgress() {
+      const percent = (currentQuestion / questions.length) * 100;
+      document.getElementById('progressBar').style.width = `${percent}%`;
+    }
+
+    function restartQuiz() {
+      currentQuestion = 0;
+      score = 0;
+      questions = shuffleArray(allQuestions).slice(0, totalQuestions);
+      document.getElementById('quizContainer').style.display = 'block';
+      document.getElementById('quizResult').style.display = 'none';
+      showQuestion();
+    }
+
+    // Start the first question
+    showQuestion();
+  </script>
+</body>
+</html>
